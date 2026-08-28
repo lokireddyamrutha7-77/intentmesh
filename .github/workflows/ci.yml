@@ -61,7 +61,7 @@ jobs:
 
       - name: Run Master End-to-End MVP Test Suite
         run: |
-          node scratch/run_e2e_mvp_test.js
+          node tests/e2e/run_e2e_mvp_test.js
 
       - name: Build Web Frontend Dashboard
         run: |

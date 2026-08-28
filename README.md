@@ -290,7 +290,7 @@ The repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`
 5. Smart contract build (`forge build`)
 6. Foundry unit & invariant testing (`forge test -vvv`)
 7. Workspace TypeScript compilation (`tsc --build`)
-8. Master E2E MVP Acceptance Test Suite (`node scratch/run_e2e_mvp_test.js`)
+8. Master E2E MVP Acceptance Test Suite (`node tests/e2e/run_e2e_mvp_test.js`)
 9. Web Frontend Build (`pnpm --filter @intentmesh/web build`)
 
 ---
