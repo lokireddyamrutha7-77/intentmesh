@@ -12,6 +12,7 @@
     "dev:web": "pnpm --filter @intentmesh/web dev"
   },
   "devDependencies": {
+    "@types/node": "^20.17.19",
     "typescript": "^5.7.3"
   }
 }

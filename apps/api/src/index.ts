@@ -3,7 +3,7 @@ import { LocalSimulationAdapter } from "@intentmesh/chain-adapters";
 import { ExecutionMonitorService } from "@intentmesh/execution-monitor";
 import { FailureManagerService } from "@intentmesh/failure-manager";
 import { ProtocolEventIndexer } from "@intentmesh/indexer";
-import { Intent, VerificationStatus } from "@intentmesh/protocol-types";
+import { Intent } from "@intentmesh/protocol-types";
 import { DeterministicRiskEngine } from "@intentmesh/risk-engine";
 import { DeterministicVerificationEngine } from "@intentmesh/verification-sdk";
 
@@ -16,10 +16,7 @@ const executionMonitor = new ExecutionMonitorService(chainAdapter);
 const failureManager = new FailureManagerService(executionMonitor, chainAdapter);
 const indexer = new ProtocolEventIndexer();
 
-const intentsStore = new Map<string, Intent>();
-const auctionsStore = new Map<string, any>();
-
-const server = http.createServer((req, res) => {
+const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
