@@ -1,6 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist"
-  }
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../../packages/protocol-types" },
+    { "path": "../../packages/chain-adapters" },
+    { "path": "../../packages/risk-engine" },
+    { "path": "../execution-monitor" }
+  ]
 }

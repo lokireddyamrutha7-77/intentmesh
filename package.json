@@ -5,7 +5,11 @@
   "description": "Modular, security-conscious cross-chain intent execution marketplace",
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build --force packages/protocol-types packages/intent-schema packages/solver-sdk packages/risk-engine packages/chain-adapters packages/verification-sdk services/execution-monitor services/failure-manager services/indexer apps/api solvers",
+    "test": "node scratch/run_e2e_mvp_test.js",
+    "demo": "node scratch/run_e2e_mvp_test.js",
+    "demo:failure": "node scratch/run_e2e_mvp_test.js",
+    "dev:web": "pnpm --filter @intentmesh/web dev"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

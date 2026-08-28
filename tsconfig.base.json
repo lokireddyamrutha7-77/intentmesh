@@ -9,7 +9,13 @@
     "paths": {
       "@intentmesh/protocol-types": ["packages/protocol-types/src/index.ts"],
       "@intentmesh/intent-schema": ["packages/intent-schema/src/index.ts"],
-      "@intentmesh/solver-sdk": ["packages/solver-sdk/src/index.ts"]
+      "@intentmesh/solver-sdk": ["packages/solver-sdk/src/index.ts"],
+      "@intentmesh/risk-engine": ["packages/risk-engine/src/index.ts"],
+      "@intentmesh/chain-adapters": ["packages/chain-adapters/src/index.ts"],
+      "@intentmesh/verification-sdk": ["packages/verification-sdk/src/index.ts"],
+      "@intentmesh/execution-monitor": ["services/execution-monitor/src/index.ts"],
+      "@intentmesh/failure-manager": ["services/failure-manager/src/index.ts"],
+      "@intentmesh/indexer": ["services/indexer/src/index.ts"]
     },
     "strict": true,
     "esModuleInterop": true,

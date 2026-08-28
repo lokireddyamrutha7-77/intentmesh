@@ -17,9 +17,17 @@ import "./interfaces/IInputEscrow.sol";
 contract SettlementManager is ISettlementManager, Ownable, Events {
     mapping(bytes32 => bool) private _settledIntents;
     mapping(bytes32 => bool) private _refundedIntents;
+    mapping(address => bool) public authorizedCoordinators;
 
     IVerificationAdapter public verificationAdapter;
     IInputEscrow public inputEscrow;
+
+    modifier onlyAuthorized() {
+        if (msg.sender != owner() && !authorizedCoordinators[msg.sender]) {
+            revert Errors.Unauthorized();
+        }
+        _;
+    }
 
     constructor(address _verificationAdapter, address _inputEscrow) Ownable(msg.sender) {
         if (_verificationAdapter == address(0) || _inputEscrow == address(0)) {
@@ -29,11 +37,16 @@ contract SettlementManager is ISettlementManager, Ownable, Events {
         inputEscrow = IInputEscrow(_inputEscrow);
     }
 
+    function setCoordinator(address coordinator, bool authorized) external onlyOwner {
+        if (coordinator == address(0)) revert Errors.ZeroAddress();
+        authorizedCoordinators[coordinator] = authorized;
+    }
+
     /**
      * @notice Authorizes settlement for a verified intent.
      * @dev Enforces INVARIANT-008: Requires VerificationAdapter status == VALID.
      */
-    function authorizeSettlement(bytes32 intentHash, address solver) external override onlyOwner {
+    function authorizeSettlement(bytes32 intentHash, address solver) external override onlyAuthorized {
         if (solver == address(0)) revert Errors.ZeroAddress();
         if (_settledIntents[intentHash]) revert Errors.AlreadySettled();
 
@@ -44,17 +57,31 @@ contract SettlementManager is ISettlementManager, Ownable, Events {
 
         _settledIntents[intentHash] = true;
         emit SettlementAuthorized(intentHash, solver);
+
+        // Execute fund release from InputEscrow if configured
+        if (address(inputEscrow) != address(0) && inputEscrow.getEscrowAmount(intentHash) > 0) {
+            try inputEscrow.releaseFunds(intentHash, solver) {} catch {}
+        }
     }
 
     /**
      * @notice Authorizes refund for a failed or expired intent.
      */
-    function authorizeRefund(bytes32 intentHash, address user, string calldata reason) external override onlyOwner {
+    function authorizeRefund(bytes32 intentHash, address user, string calldata reason)
+        external
+        override
+        onlyAuthorized
+    {
         if (user == address(0)) revert Errors.ZeroAddress();
         if (_settledIntents[intentHash] || _refundedIntents[intentHash]) revert Errors.AlreadySettled();
 
         _refundedIntents[intentHash] = true;
         emit RefundAuthorized(intentHash, user, reason);
+
+        // Execute fund refund from InputEscrow if configured
+        if (address(inputEscrow) != address(0) && inputEscrow.getEscrowAmount(intentHash) > 0) {
+            try inputEscrow.refundFunds(intentHash, user) {} catch {}
+        }
     }
 
     function isSettled(bytes32 intentHash) external view override returns (bool) {

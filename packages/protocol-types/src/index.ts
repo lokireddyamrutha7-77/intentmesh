@@ -102,3 +102,15 @@ export interface EligibilityResult {
   eligible: boolean;
   reasons: EligibilityReason[];
 }
+
+export interface VerificationProof {
+  intentHash: string;
+  destinationChainId: bigint;
+  destinationToken: string;
+  recipient: string;
+  deliveredAmount: bigint;
+  transactionHash: string;
+  blockNumber: bigint;
+  blockTimestamp: bigint;
+  status: VerificationStatus;
+}

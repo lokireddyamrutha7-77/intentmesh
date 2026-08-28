@@ -1,5 +1,22 @@
 {
   "name": "@intentmesh/api",
   "version": "0.1.0",
-  "private": true
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@intentmesh/chain-adapters": "workspace:*",
+    "@intentmesh/execution-monitor": "workspace:*",
+    "@intentmesh/failure-manager": "workspace:*",
+    "@intentmesh/indexer": "workspace:*",
+    "@intentmesh/protocol-types": "workspace:*",
+    "@intentmesh/risk-engine": "workspace:*",
+    "@intentmesh/verification-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
 }
