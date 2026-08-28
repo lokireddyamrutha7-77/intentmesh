@@ -1,26 +1,31 @@
 export function renderIntentTimeline(currentStateNumber: number): string {
   const stages = [
-    { num: 1, name: "CREATED" },
-    { num: 2, name: "VALIDATED" },
-    { num: 3, name: "AUCTION_READY" },
-    { num: 4, name: "AUCTION_OPEN" },
-    { num: 6, name: "WINNER_SELECTED" },
-    { num: 8, name: "EXECUTING" },
-    { num: 10, name: "VERIFICATION" },
-    { num: 11, name: "SETTLEMENT" },
-    { num: 12, name: "COMPLETED" },
+    { num: 1, name: "CREATED", desc: "Escrow Secured" },
+    { num: 2, name: "VALIDATED", desc: "Canonical Hash" },
+    { num: 3, name: "AUCTION_READY", desc: "Batch Open" },
+    { num: 4, name: "AUCTION_OPEN", desc: "Sealed Solvers" },
+    { num: 6, name: "WINNER_SELECTED", desc: "Capacity Reserved" },
+    { num: 8, name: "EXECUTING", desc: "Dest Chain Tx" },
+    { num: 10, name: "VERIFICATION", desc: "7-Point Proof" },
+    { num: 11, name: "SETTLEMENT", desc: "Payout Authorized" },
+    { num: 12, name: "COMPLETED", desc: "Intent Settled" },
   ];
 
   return `
-    <div class="timeline">
+    <div class="lifecycle-timeline">
       ${stages
         .map((st) => {
-          const isActive = currentStateNumber >= st.num;
-          const isCurrent = currentStateNumber === st.num;
+          const isDone = currentStateNumber > st.num || currentStateNumber === 12;
+          const isActive = currentStateNumber === st.num;
+          const stateClass = isDone ? "done" : isActive ? "active" : "";
+
           return `
-            <div class="timeline-step ${isActive ? "active" : ""}" style="${isCurrent ? "border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(6,182,212,0.3);" : ""}">
-              <div class="step-num">${st.num}</div>
-              <div class="step-name" style="color: ${isActive ? "white" : "var(--text-muted)"}">${st.name}</div>
+            <div class="lifecycle-step ${stateClass}">
+              <div class="step-node">
+                ${isDone ? "✓" : st.num}
+              </div>
+              <div class="step-title">${st.name}</div>
+              <div style="font-size: 10px; color: var(--text-muted);">${st.desc}</div>
             </div>
           `;
         })

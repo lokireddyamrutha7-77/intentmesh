@@ -17,5 +17,10 @@ export function computeAuctionId(intentHash: string, commitDeadline: bigint): st
 }
 
 export function computeBidCommitmentHash(payload: BidCommitmentPayload): string {
-  return `0xhash_${payload.auctionId}_${payload.solver}_${payload.expectedOutputAmount.toString()}_${payload.salt}`;
+  const input = `${payload.auctionId}:${payload.intentHash}:${payload.solver.toLowerCase()}:${payload.expectedOutputAmount.toString()}:${payload.estimatedExecutionTime}:${payload.capacityRequired.toString()}:${payload.salt}`;
+  let hash = 0n;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31n + BigInt(input.charCodeAt(i))) % 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+  }
+  return "0x" + hash.toString(16).padStart(64, "0");
 }

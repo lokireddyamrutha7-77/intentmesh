@@ -19,4 +19,4 @@ Write-Host "[2/2] Deploying Protocol Contracts to Destination Chain (31338)..." 
 
 Pop-Location
 
-Write-Host "✓ Deployment complete! JSON metadata saved under contracts/deployments/" -ForegroundColor Green
+Write-Host "[OK] Deployment complete! JSON metadata saved under contracts/deployments/" -ForegroundColor Green

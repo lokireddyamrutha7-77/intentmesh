@@ -15,7 +15,8 @@
       "@intentmesh/verification-sdk": ["packages/verification-sdk/src/index.ts"],
       "@intentmesh/execution-monitor": ["services/execution-monitor/src/index.ts"],
       "@intentmesh/failure-manager": ["services/failure-manager/src/index.ts"],
-      "@intentmesh/indexer": ["services/indexer/src/index.ts"]
+      "@intentmesh/indexer": ["services/indexer/src/index.ts"],
+      "@intentmesh/solvers": ["solvers/index.ts"]
     },
     "strict": true,
     "esModuleInterop": true,

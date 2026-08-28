@@ -51,9 +51,12 @@ contract DeployScript is Script {
         );
         SettlementManager settlementManager = new SettlementManager(address(verificationAdapter), address(inputEscrow));
 
-        // 3. Deploy Local Demo Token (MockUSDC)
+        // 3. Deploy Local Demo Token (MockUSDC) & Fund Solvers
         MockERC20 mockUSDC = new MockERC20("Mock USDC Token", "USDC");
         mockUSDC.mint(deployer, 1_000_000 * 1e6);
+        mockUSDC.mint(address(bytes20(hex"70997970C51812dc3A010C7d01b50e0d17dc79C8")), 500_000 * 1e6); // Solver A
+        mockUSDC.mint(address(bytes20(hex"3C44CdDDB6a900fa2b585dd299e03d12FA4293BC")), 500_000 * 1e6); // Solver B
+        mockUSDC.mint(address(bytes20(hex"90F79bf6EB2c4f8096638522f60758928276f470")), 500_000 * 1e6); // Solver C
 
         // 4. Configure Inter-Contract Authorizations & Dependencies
         intentRegistry.setInputEscrow(address(inputEscrow));

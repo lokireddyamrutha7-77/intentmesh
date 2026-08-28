@@ -3,15 +3,18 @@ import {
   Intent,
   SolverProfile,
 } from "@intentmesh/protocol-types";
-import { evaluateEligibility, SolverClient } from "@intentmesh/solver-sdk";
-import { ISolverAgent, SolverProposal } from "../shared/agent-interface";
+import { computeBidCommitmentHash, SolverClient } from "@intentmesh/solver-sdk";
+import { GeneratedBid, ISolverAgent, SolverProposal } from "../shared/agent-interface";
 
 export class FastSolverAgent implements ISolverAgent {
-  private readonly solverAddress: string;
+  public readonly solverAddress: string;
+  public readonly agentName: string = "Solver B";
+  public readonly strategyName: string = "Express Fast";
   private readonly client: SolverClient;
+  private activeBids: Map<string, GeneratedBid> = new Map();
 
   constructor(solverAddress: string, client: SolverClient) {
-    this.solverAddress = solverAddress;
+    this.solverAddress = solverAddress.toLowerCase();
     this.client = client;
   }
 
@@ -29,9 +32,9 @@ export class FastSolverAgent implements ISolverAgent {
       throw new Error(`Solver B cannot handle intent: ${eligibility.reasons.join(", ")}`);
     }
 
-    // Fast parameters: 2% above minOutputAmount, 15s execution time
+    // Fast express strategy: 2% surplus above minimum output, 15s execution time
     const expectedOutputAmount = intent.minOutputAmount + (intent.minOutputAmount * 2n) / 100n;
-    const estimatedExecutionTime = 15; // 15 seconds
+    const estimatedExecutionTime = 15;
     const capacityRequired = intent.sourceAmount;
 
     return {
@@ -50,11 +53,33 @@ export class FastSolverAgent implements ISolverAgent {
     };
   }
 
-  public createBidCommitment(
-    auctionId: string,
-    proposal: SolverProposal,
-    salt: string
-  ): string {
-    return "0xcommitment_hash_b";
+  public async generateBid(intent: Intent, auctionId: string): Promise<GeneratedBid> {
+    const proposal = await this.buildProposal(intent);
+    const saltNum = BigInt(Math.floor(Math.random() * 1e12)) + 200000n;
+    const salt = `0xsalt_b_${saltNum.toString(16)}`;
+
+    const commitmentHash = computeBidCommitmentHash({
+      auctionId,
+      intentHash: intent.intentHash,
+      solver: this.solverAddress,
+      expectedOutputAmount: proposal.expectedOutputAmount,
+      estimatedExecutionTime: proposal.estimatedExecutionTime,
+      capacityRequired: proposal.capacityRequired,
+      salt,
+    });
+
+    const bid: GeneratedBid = {
+      auctionId,
+      intentHash: intent.intentHash,
+      solver: this.solverAddress,
+      expectedOutputAmount: proposal.expectedOutputAmount,
+      estimatedExecutionTime: proposal.estimatedExecutionTime,
+      capacityRequired: proposal.capacityRequired,
+      salt,
+      commitmentHash,
+    };
+
+    this.activeBids.set(auctionId, bid);
+    return bid;
   }
 }

@@ -1,4 +1,4 @@
-import { ExecutionResult, LocalSimulationAdapter } from "@intentmesh/chain-adapters";
+import { ExecutionResult, IExecutionAdapter } from "@intentmesh/chain-adapters";
 import { ExecutionObservation, ExecutionMonitorService } from "@intentmesh/execution-monitor";
 import { Intent } from "@intentmesh/protocol-types";
 
@@ -21,10 +21,10 @@ export interface FallbackResolution {
 
 export class FailureManagerService {
   private readonly monitor: ExecutionMonitorService;
-  private readonly adapter: LocalSimulationAdapter;
+  private readonly adapter: IExecutionAdapter;
   private readonly failedSolversPerIntent: Map<string, Set<string>> = new Map();
 
-  constructor(monitor: ExecutionMonitorService, adapter: LocalSimulationAdapter) {
+  constructor(monitor: ExecutionMonitorService, adapter: IExecutionAdapter) {
     this.monitor = monitor;
     this.adapter = adapter;
   }

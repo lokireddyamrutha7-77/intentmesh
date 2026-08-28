@@ -18,6 +18,7 @@ moduleAlias.prototype.require = function(request) {
     '@intentmesh/execution-monitor': path.join(rootDir, 'services/execution-monitor/dist/index.js'),
     '@intentmesh/failure-manager': path.join(rootDir, 'services/failure-manager/dist/index.js'),
     '@intentmesh/indexer': path.join(rootDir, 'services/indexer/dist/index.js'),
+    '@intentmesh/solvers': path.join(rootDir, 'solvers/dist/index.js'),
   };
   if (map[request]) {
     return originalRequire.call(this, map[request]);

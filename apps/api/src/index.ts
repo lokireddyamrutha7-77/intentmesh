@@ -1,7 +1,7 @@
 import http from "http";
 import fs from "fs";
 import path from "path";
-import { LocalSimulationAdapter } from "@intentmesh/chain-adapters";
+import { EVMChainAdapter, LocalSimulationAdapter } from "@intentmesh/chain-adapters";
 import { ExecutionMonitorService } from "@intentmesh/execution-monitor";
 import { FailureManagerService } from "@intentmesh/failure-manager";
 import { ProtocolEventIndexer } from "@intentmesh/indexer";
@@ -9,6 +9,7 @@ import { validateIntentSchema, computeCanonicalIntentHash } from "@intentmesh/in
 import { Intent, IntentState, VerificationStatus, Bid, SolverProfile, SolverCapabilities } from "@intentmesh/protocol-types";
 import { DeterministicRiskEngine } from "@intentmesh/risk-engine";
 import { DeterministicVerificationEngine } from "@intentmesh/verification-sdk";
+import { processRealSolverOrchestration } from "./solverOrchestrator";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const SOURCE_CHAIN_ID = BigInt(process.env.SOURCE_CHAIN_ID || "31337");
@@ -61,7 +62,12 @@ async function rpcRead(rpcUrl: string, method: string, params: any[] = []): Prom
 
 // Services Initialization
 const riskEngine = new DeterministicRiskEngine();
-const chainAdapter = new LocalSimulationAdapter();
+const chainAdapter = new EVMChainAdapter({
+  destinationRpcUrl: DESTINATION_RPC_URL,
+  destinationChainId: DESTINATION_CHAIN_ID,
+  destinationVaultAddress: deployments.DestinationVault,
+  destinationTokenAddress: deployments.MockUSDC,
+});
 const verificationEngine = new DeterministicVerificationEngine();
 const executionMonitor = new ExecutionMonitorService(chainAdapter);
 const failureManager = new FailureManagerService(executionMonitor, chainAdapter);
@@ -74,7 +80,18 @@ const auctionsStore = new Map<string, any>();
 const executionsStore = new Map<string, any>();
 const sseClients = new Set<http.ServerResponse>();
 
-// Register Demo Solvers
+function broadcastSseEvent(event: any) {
+  const data = `data: ${JSON.stringify(event, (_, v) => (typeof v === "bigint" ? v.toString() : v))}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(data);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
+// Registered Solver Agents Network
 const demoSolvers: Record<string, { profile: SolverProfile; capabilities: SolverCapabilities; bondEth: bigint; capacityUsdc: bigint }> = {
   "0xsolver_a_reliable": {
     profile: { solver: "0xsolver_a_reliable", isActive: true, registeredAt: 1000n, metadataURI: "ipfs://solverA_reliable" },
@@ -205,7 +222,6 @@ const server = http.createServer(async (req: http.IncomingMessage, res: http.Ser
         createdAt: nowSec,
       };
 
-      // Phase 2 Rules validation: sourceAmount > 0 & minOutputAmount > 0
       if (!intentInput.sourceAmount || intentInput.sourceAmount <= 0n) {
         return sendError(res, 400, "INVALID_SOURCE_AMOUNT", "sourceAmount must be strictly greater than 0");
       }
@@ -219,8 +235,27 @@ const server = http.createServer(async (req: http.IncomingMessage, res: http.Ser
       intentsStore.set(intentHash, fullIntent);
       intentStatesStore.set(intentHash, IntentState.AUCTION_READY);
 
-      indexer.recordEvent(intentHash, "INTENT_CREATED", "Intent created via API", fullIntent);
-      indexer.recordEvent(intentHash, "ESCROW_LOCKED", "Input escrow locked source tokens", { amount: fullIntent.sourceAmount.toString() });
+      const evt1 = indexer.recordEvent(intentHash, "INTENT_CREATED", "Intent created via API", fullIntent);
+      broadcastSseEvent(evt1);
+
+      const evt2 = indexer.recordEvent(intentHash, "ESCROW_LOCKED", "Input escrow locked source tokens", { amount: fullIntent.sourceAmount.toString() });
+      broadcastSseEvent(evt2);
+
+      // Launch Real Solver Network Orchestration
+      processRealSolverOrchestration(
+        fullIntent,
+        deployments,
+        indexer,
+        broadcastSseEvent,
+        chainAdapter,
+        verificationEngine,
+        failureManager,
+        riskEngine,
+        auctionsStore,
+        executionsStore,
+        intentStatesStore,
+        demoSolvers
+      ).catch(err => console.error("Solver orchestration background error:", err));
 
       return sendJson(res, 201, {
         intentHash,
@@ -314,7 +349,9 @@ const server = http.createServer(async (req: http.IncomingMessage, res: http.Ser
 
       auctionsStore.set(auctionId, auction);
       intentStatesStore.set(intentHash, IntentState.AUCTION_OPEN);
-      indexer.recordEvent(intentHash, "AUCTION_CREATED", "Batch auction created", auction);
+
+      const evt = indexer.recordEvent(intentHash, "AUCTION_CREATED", "Batch auction created", auction);
+      broadcastSseEvent(evt);
 
       return sendJson(res, 201, { auction });
     } catch (err: any) {
@@ -406,24 +443,34 @@ const server = http.createServer(async (req: http.IncomingMessage, res: http.Ser
     };
 
     intentsStore.set(intent.intentHash, intent);
-    indexer.recordEvent(intent.intentHash, "INTENT_CREATED", "Intent created by user", intent);
-    indexer.recordEvent(intent.intentHash, "ESCROW_LOCKED", "Input escrow locked 1000 USDC", { amount: intent.sourceAmount.toString() });
-    indexer.recordEvent(intent.intentHash, "AUCTION_CREATED", "Batch auction opened", { auctionId: "0xauc_golden" });
+    const e1 = indexer.recordEvent(intent.intentHash, "INTENT_CREATED", "Intent created by user", intent);
+    broadcastSseEvent(e1);
+
+    const e2 = indexer.recordEvent(intent.intentHash, "ESCROW_LOCKED", "Input escrow locked 1000 USDC", { amount: intent.sourceAmount.toString() });
+    broadcastSseEvent(e2);
+
+    const e3 = indexer.recordEvent(intent.intentHash, "AUCTION_CREATED", "Batch auction opened", { auctionId: "0xauc_golden" });
+    broadcastSseEvent(e3);
 
     // Winner selection
     const winnerSolver = "0xsolver_c_risky";
     const expectedOutput = 997n * 10n**6n;
-    indexer.recordEvent(intent.intentHash, "WINNER_SELECTED", `Winner selected: Solver C (${winnerSolver})`, { winner: winnerSolver, output: expectedOutput.toString() });
+    const e4 = indexer.recordEvent(intent.intentHash, "WINNER_SELECTED", `Winner selected: Solver C (${winnerSolver})`, { winner: winnerSolver, output: expectedOutput.toString() });
+    broadcastSseEvent(e4);
 
     // Execution
     const execResult = await chainAdapter.execute(intent, winnerSolver, expectedOutput, false);
     executionsStore.set(execResult.transactionHash, execResult);
-    indexer.recordEvent(intent.intentHash, "EXECUTION_CONFIRMED", `Destination execution confirmed on ${chainAdapter.destinationChainName}`, execResult);
+    const e5 = indexer.recordEvent(intent.intentHash, "EXECUTION_CONFIRMED", `Destination execution confirmed on ${chainAdapter.destinationChainName}`, execResult);
+    broadcastSseEvent(e5);
 
     // Verification & Settlement
     const verification = verificationEngine.verifyExecution(intent, execResult);
-    indexer.recordEvent(intent.intentHash, "VERIFICATION_PASSED", "7-point verification checklist passed", verification);
-    indexer.recordEvent(intent.intentHash, "SETTLEMENT_COMPLETED", `Settlement authorized. 1000 USDC released to ${winnerSolver}`);
+    const e6 = indexer.recordEvent(intent.intentHash, "VERIFICATION_PASSED", "7-point verification checklist passed", verification);
+    broadcastSseEvent(e6);
+
+    const e7 = indexer.recordEvent(intent.intentHash, "SETTLEMENT_COMPLETED", `Settlement authorized. 1000 USDC released to ${winnerSolver}`);
+    broadcastSseEvent(e7);
 
     return sendJson(res, 200, {
       status: "SUCCESS",
@@ -462,23 +509,23 @@ const server = http.createServer(async (req: http.IncomingMessage, res: http.Ser
       { solver: solverB, expectedOutputAmount: 970n * 10n**6n, estimatedExecutionTime: 15, capacityRequired: intent.sourceAmount, salt: "0xsaltB", valid: true },
     ];
 
-    indexer.recordEvent(intent.intentHash, "INTENT_CREATED", "Intent created");
-    indexer.recordEvent(intent.intentHash, "ESCROW_LOCKED", "Input escrow locked 1000 USDC");
-    indexer.recordEvent(intent.intentHash, "WINNER_SELECTED", `Primary winner: ${solverA}`);
+    const e1 = indexer.recordEvent(intent.intentHash, "INTENT_CREATED", "Intent created"); broadcastSseEvent(e1);
+    const e2 = indexer.recordEvent(intent.intentHash, "ESCROW_LOCKED", "Input escrow locked 1000 USDC"); broadcastSseEvent(e2);
+    const e3 = indexer.recordEvent(intent.intentHash, "WINNER_SELECTED", `Primary winner: ${solverA}`); broadcastSseEvent(e3);
 
     // Primary failure
     const failedExec = await chainAdapter.execute(intent, solverA, 0n, true);
-    indexer.recordEvent(intent.intentHash, "EXECUTION_FAILED", `Primary solver ${solverA} execution failed`);
+    const e4 = indexer.recordEvent(intent.intentHash, "EXECUTION_FAILED", `Primary solver ${solverA} execution failed`); broadcastSseEvent(e4);
 
     // Fallback selection
     const resolution = failureManager.resolveFailureOrFallback(intent, solverA, bids);
-    indexer.recordEvent(intent.intentHash, "FALLBACK_SELECTED", resolution.reason, { fallbackSolver: solverB });
+    const e5 = indexer.recordEvent(intent.intentHash, "FALLBACK_SELECTED", resolution.reason, { fallbackSolver: solverB }); broadcastSseEvent(e5);
 
     // Fallback retry
     const fallbackExec = await chainAdapter.execute(intent, solverB, 970n * 10n**6n, false);
     const verification = verificationEngine.verifyExecution(intent, fallbackExec);
-    indexer.recordEvent(intent.intentHash, "VERIFICATION_PASSED", "Fallback execution verified");
-    indexer.recordEvent(intent.intentHash, "SETTLEMENT_COMPLETED", `Settled with fallback solver ${solverB}`);
+    const e6 = indexer.recordEvent(intent.intentHash, "VERIFICATION_PASSED", "Fallback execution verified"); broadcastSseEvent(e6);
+    const e7 = indexer.recordEvent(intent.intentHash, "SETTLEMENT_COMPLETED", `Settled with fallback solver ${solverB}`); broadcastSseEvent(e7);
 
     return sendJson(res, 200, {
       status: "SUCCESS",
@@ -517,7 +564,7 @@ const server = http.createServer(async (req: http.IncomingMessage, res: http.Ser
     ];
 
     const resolution = failureManager.resolveFailureOrFallback(intent, solverA, bids);
-    indexer.recordEvent(intent.intentHash, "REFUND_AUTHORIZED", "Contract refund authorized to user 0xuser_alice");
+    const e1 = indexer.recordEvent(intent.intentHash, "REFUND_AUTHORIZED", "Contract refund authorized to user 0xuser_alice"); broadcastSseEvent(e1);
 
     return sendJson(res, 200, {
       status: "SUCCESS",

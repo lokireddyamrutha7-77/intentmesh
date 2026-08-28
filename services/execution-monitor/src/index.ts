@@ -1,4 +1,4 @@
-import { ExecutionResult, LocalSimulationAdapter } from "@intentmesh/chain-adapters";
+import { ExecutionResult, IExecutionAdapter } from "@intentmesh/chain-adapters";
 import { Intent } from "@intentmesh/protocol-types";
 
 export type ExecutionObservationStatus = "CONFIRMED" | "FAILED" | "TIMEOUT" | "PENDING";
@@ -13,10 +13,10 @@ export interface ExecutionObservation {
 }
 
 export class ExecutionMonitorService {
-  private readonly adapter: LocalSimulationAdapter;
+  private readonly adapter: IExecutionAdapter;
   private readonly observations: Map<string, ExecutionObservation> = new Map();
 
-  constructor(adapter: LocalSimulationAdapter) {
+  constructor(adapter: IExecutionAdapter) {
     this.adapter = adapter;
   }
 

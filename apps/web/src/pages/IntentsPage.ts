@@ -15,103 +15,116 @@ export async function renderIntentsPage(intentHashParam?: string): Promise<strin
     }
 
     return `
-      <div class="page-container">
-        <div class="page-title-group">
-          <h1 class="page-title">Canonical Intents Directory</h1>
-          <p class="page-subtitle">Inspect registered cross-chain intents and their current protocol verification state.</p>
+      <div class="page-wrapper">
+        <div class="page-header">
+          <h1 class="page-title">Activity & Intent History</h1>
+          <p class="page-subtitle">Inspect submitted cross-chain intents, real-time protocol state transitions, and custody escrow statuses.</p>
         </div>
 
-        <div class="card-section">
+        <div class="glass-card">
           ${
             intents.length === 0
-              ? `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No registered intents found in protocol state.</div>`
+              ? `<div style="padding: 40px; text-align: center; color: var(--text-muted);">No intents found in protocol state. Submit an intent on the <strong>Execute Terminal</strong>.</div>`
               : `
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Canonical Intent Hash</th>
-                  <th>User</th>
-                  <th>Source Chain</th>
-                  <th>Dest Chain</th>
-                  <th>Amount</th>
-                  <th>Min Output</th>
-                  <th>Lifecycle State</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${intents
-                  .map(
-                    (i) => `
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
                   <tr>
-                    <td><code style="color: var(--accent-cyan);">${i.intentHash.substring(0, 12)}...${i.intentHash.substring(58)}</code></td>
-                    <td>${i.user.substring(0, 10)}...</td>
-                    <td>${i.sourceChainId}</td>
-                    <td>${i.destinationChainId}</td>
-                    <td>${(BigInt(i.sourceAmount) / 10n**6n).toString()} USDC</td>
-                    <td>${(BigInt(i.minOutputAmount) / 10n**6n).toString()} USDC</td>
-                    <td><span class="badge badge-info">STATE ${i.state}</span></td>
-                    <td>
-                      <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="window.navigateTo('intents', '${i.intentHash}')">Inspect Timeline</button>
-                    </td>
+                    <th>Canonical Hash</th>
+                    <th>User</th>
+                    <th>Source ➔ Dest</th>
+                    <th>Input Amount</th>
+                    <th>Min Output</th>
+                    <th>Protocol State</th>
+                    <th>Escrow Payout</th>
+                    <th>Action</th>
                   </tr>
-                `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${intents
+                    .map(
+                      (i) => `
+                    <tr>
+                      <td><code style="color: var(--accent-cyan); font-weight: 700;">${i.intentHash.substring(0, 10)}...${i.intentHash.substring(58)}</code></td>
+                      <td>${i.user.substring(0, 8)}...</td>
+                      <td>Chain ${i.sourceChainId} ➔ ${i.destinationChainId}</td>
+                      <td>${(BigInt(i.sourceAmount) / 10n**6n).toString()} USDC</td>
+                      <td>${(BigInt(i.minOutputAmount) / 10n**6n).toString()} USDC</td>
+                      <td><span class="badge-pill badge-info">STATE ${i.state}</span></td>
+                      <td><span class="badge-pill badge-low">LOCKED IN ESCROW</span></td>
+                      <td>
+                        <button class="nav-link" style="padding: 6px 12px; font-size: 12px;" onclick="window.navigateTo('activity', '${i.intentHash}')">Inspect Journey</button>
+                      </td>
+                    </tr>
+                  `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
           `
           }
         </div>
       </div>
     `;
   } catch (err: any) {
-    return `<div class="page-container"><div class="card-section" style="border-color: var(--status-danger);">Error loading intents: ${err.message}</div></div>`;
+    return `
+      <div class="page-wrapper">
+        <div class="glass-card" style="border-color: var(--accent-rose);">
+          Error loading intents: ${err.message}
+        </div>
+      </div>
+    `;
   }
 }
 
 function renderIntentDetail(intent: IntentRecord): string {
   return `
-    <div class="page-container">
-      <div class="page-title-group">
-        <button class="btn btn-secondary" style="margin-bottom: 12px;" onclick="window.navigateTo('intents')">← Back To Intents Directory</button>
-        <h1 class="page-title">Intent Lifecycle Inspection</h1>
-        <p class="page-subtitle">Canonical Hash: <code style="color: var(--accent-cyan);">${intent.intentHash}</code></p>
+    <div class="page-wrapper">
+      <div class="page-header">
+        <button class="nav-link" style="margin-bottom: 12px;" onclick="window.navigateTo('activity')">← Back to Activity Directory</button>
+        <h1 class="page-title">Intent Journey: <code style="color: var(--accent-cyan); font-size: 22px;">${intent.intentHash.substring(0, 16)}...</code></h1>
+        <p class="page-subtitle">Full 11-field canonical representation and real-time lifecycle tracking.</p>
       </div>
 
-      <!-- 9-step timeline visualizer -->
-      <div class="card-section">
-        <div class="section-header">Protocol Lifecycle Timeline</div>
+      <!-- 9-STEP TIMELINE -->
+      <div class="glass-card" style="margin-bottom: 24px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: white; margin-bottom: 16px;">Protocol Stage Progression</h3>
         ${renderIntentTimeline(intent.state)}
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-        <div class="card-section">
-          <div class="section-header">Canonical Intent Specification</div>
-          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
-            <div><strong>User:</strong> <code>${intent.user}</code></div>
-            <div><strong>Recipient:</strong> <code>${intent.recipient}</code></div>
-            <div><strong>Source Chain ID:</strong> ${intent.sourceChainId}</div>
-            <div><strong>Destination Chain ID:</strong> ${intent.destinationChainId}</div>
-            <div><strong>Source Amount:</strong> ${(BigInt(intent.sourceAmount) / 10n**6n).toString()} USDC</div>
-            <div><strong>Minimum Output:</strong> ${(BigInt(intent.minOutputAmount) / 10n**6n).toString()} USDC</div>
-            <div><strong>Nonce:</strong> ${intent.nonce}</div>
-            <div><strong>Verification Policy:</strong> <code>${intent.verificationPolicy}</code></div>
+        
+        <!-- CANONICAL SPECIFICATION CARD -->
+        <div class="glass-card">
+          <h3 style="font-size: 16px; font-weight: 700; color: white; margin-bottom: 16px;">11-Field Canonical Specification</h3>
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--text-secondary);">
+            <div><strong>User:</strong> <code style="color: white;">${intent.user}</code></div>
+            <div><strong>Recipient:</strong> <code style="color: white;">${intent.recipient}</code></div>
+            <div><strong>Source Chain ID:</strong> <span style="color: white;">${intent.sourceChainId}</span></div>
+            <div><strong>Destination Chain ID:</strong> <span style="color: white;">${intent.destinationChainId}</span></div>
+            <div><strong>Source Amount:</strong> <span style="color: var(--accent-cyan); font-weight: 700;">${(BigInt(intent.sourceAmount) / 10n**6n).toString()} USDC</span></div>
+            <div><strong>Min Output Amount:</strong> <span style="color: var(--accent-emerald); font-weight: 700;">${(BigInt(intent.minOutputAmount) / 10n**6n).toString()} USDC</span></div>
+            <div><strong>Nonce:</strong> <span style="color: white;">${intent.nonce}</span></div>
+            <div><strong>Verification Policy:</strong> <code style="color: white;">${intent.verificationPolicy}</code></div>
           </div>
         </div>
 
-        <div class="card-section">
-          <div class="section-header">Escrow & Custody State</div>
-          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
-            <div><strong>Custody Vault:</strong> InputEscrow Module</div>
-            <div><strong>Escrow Status:</strong> <span class="badge badge-success">FUNDS LOCKED</span></div>
-            <div><strong>Authorized Release:</strong> SettlementManager Only</div>
-            <div><strong>Authorized Refund:</strong> SettlementManager Only</div>
-            <div style="margin-top: 12px; padding: 12px; background: #0d1322; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px;">
-              In accordance with Protocol Invariant-003, input escrow funds can only be released upon valid cryptographic proof verification by SettlementManager.
+        <!-- ESCROW & CUSTODY STATE CARD -->
+        <div class="glass-card">
+          <h3 style="font-size: 16px; font-weight: 700; color: white; margin-bottom: 16px;">Escrow & Custody Architecture</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+            <div><strong>Custody Vault:</strong> <span style="color: white;">InputEscrow Module</span></div>
+            <div><strong>Escrow Status:</strong> <span class="badge-pill badge-low">FUNDS SECURED</span></div>
+            <div><strong>Release Authorization:</strong> <span style="color: var(--accent-violet);">SettlementManager Contract Only</span></div>
+            <div><strong>Refund Path:</strong> <span style="color: var(--accent-rose);">SettlementManager Authorized Refund</span></div>
+            
+            <div style="margin-top: 12px; padding: 14px; background: rgba(0,0,0,0.3); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 12px;">
+              🔒 <strong>Protocol Invariant-003:</strong> Input escrow funds are completely non-custodial and can only be unlocked upon valid 7-point cryptographic proof verification by SettlementManager.
             </div>
           </div>
         </div>
+
       </div>
     </div>
   `;

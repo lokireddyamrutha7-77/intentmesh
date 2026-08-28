@@ -19,9 +19,24 @@ export interface SolverProposal {
   executionDataReference: string;
 }
 
+export interface GeneratedBid {
+  auctionId: string;
+  intentHash: string;
+  solver: string;
+  expectedOutputAmount: bigint;
+  estimatedExecutionTime: number;
+  capacityRequired: bigint;
+  salt: string;
+  commitmentHash: string;
+}
+
 export interface ISolverAgent {
+  readonly solverAddress: string;
+  readonly agentName: string;
+  readonly strategyName: string;
+
   getProfile(): Promise<SolverProfile>;
   canHandleIntent(intent: Intent): Promise<EligibilityResult>;
   buildProposal(intent: Intent): Promise<SolverProposal>;
-  createBidCommitment(auctionId: string, proposal: SolverProposal, salt: string): string;
+  generateBid(intent: Intent, auctionId: string): Promise<GeneratedBid>;
 }

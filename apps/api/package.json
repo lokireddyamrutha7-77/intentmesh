@@ -16,6 +16,7 @@
     "@intentmesh/protocol-types": "workspace:*",
     "@intentmesh/risk-engine": "workspace:*",
     "@intentmesh/solver-sdk": "workspace:*",
+    "@intentmesh/solvers": "workspace:*",
     "@intentmesh/verification-sdk": "workspace:*"
   },
   "devDependencies": {
