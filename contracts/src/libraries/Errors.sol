@@ -12,22 +12,38 @@ library Errors {
     error Unauthorized();
     error InvalidParameters();
 
-    // IntentRegistry Errors
+    // IntentRegistry & Validation Errors
     error InvalidIntent();
-    error IntentAlreadyExists();
-    error NonceAlreadyUsed();
-    error IntentExpired();
+    error InvalidSourceToken();
+    error InvalidDestinationToken();
+    error InvalidRecipient();
+    error InvalidAmount();
+    error InvalidMinimumOutput();
     error InvalidDeadline();
+    error InvalidChain();
+    error InvalidVerificationPolicy();
+    error NonceAlreadyUsed();
+    error IntentAlreadyExists();
+    error IntentExpired();
+    error IntentNotFound();
+    error IntentNotAuctionReady();
+    error InvalidStateTransition();
 
     // InputEscrow Errors
     error EscrowNotFound();
     error EscrowAlreadyDeposited();
+    error EscrowAlreadyLocked();
+    error EscrowAmountMismatch();
     error InvalidEscrowState();
 
     // SolverRegistry Errors
     error SolverAlreadyRegistered();
     error SolverNotRegistered();
     error SolverInactive();
+    error ChainAlreadySupported();
+    error ChainNotSupported();
+    error TokenAlreadySupported();
+    error TokenNotSupported();
 
     // SolverBondManager Errors
     error InsufficientBond();
@@ -45,10 +61,21 @@ library Errors {
     error AuctionClosed();
     error AuctionNotClosed();
     error AuctionAlreadyExists();
+    error AuctionNotFound();
+    error AuctionNotInCommitState();
+    error AuctionNotInRevealState();
+    error AuctionNotReadyToFinalize();
+    error AuctionAlreadyFinalized();
     error BidAlreadyCommitted();
     error BidNotCommitted();
     error InvalidReveal();
-    error RevealWindowClosed();
+    error CommitmentMismatch();
+    error CommitmentAlreadySubmitted();
+    error CommitmentNotFound();
+    error RevealAlreadySubmitted();
+    error RevealDeadlinePassed();
+    error MaxBidsReached();
+    error NoValidBids();
 
     // VerificationAdapter Errors
     error InvalidProof();

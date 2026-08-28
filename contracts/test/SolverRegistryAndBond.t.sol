@@ -25,7 +25,7 @@ contract SolverRegistryAndBondTest is Test {
         assertTrue(registry.isSolverActive(solver));
 
         vm.prank(solver);
-        registry.setSolverStatus(solver, false);
+        registry.setSolverStatus(false);
         assertFalse(registry.isSolverActive(solver));
     }
 

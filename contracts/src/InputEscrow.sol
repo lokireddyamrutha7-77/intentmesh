@@ -5,14 +5,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interfaces/IInputEscrow.sol";
 import "./libraries/Errors.sol";
 import "./libraries/Events.sol";
-import "./interfaces/IInputEscrow.sol";
 
 /**
  * @title InputEscrow
  * @notice Source-side escrow for user input tokens.
- * @dev Transfers occur strictly via SafeERC20 with caller authorization restrictions.
+ * @dev Custody and transfer of assets occur strictly via SafeERC20 with per-intent accounting.
  */
 contract InputEscrow is IInputEscrow, Ownable, ReentrancyGuard, Events {
     using SafeERC20 for IERC20;
@@ -26,6 +26,7 @@ contract InputEscrow is IInputEscrow, Ownable, ReentrancyGuard, Events {
 
     mapping(bytes32 => EscrowRecord) private _escrows;
     address public settlementManager;
+    address public intentRegistry;
 
     modifier onlySettlementManager() {
         if (msg.sender != settlementManager) {
@@ -41,8 +42,14 @@ contract InputEscrow is IInputEscrow, Ownable, ReentrancyGuard, Events {
         settlementManager = _settlementManager;
     }
 
+    function setIntentRegistry(address _intentRegistry) external onlyOwner {
+        if (_intentRegistry == address(0)) revert Errors.ZeroAddress();
+        intentRegistry = _intentRegistry;
+    }
+
     /**
-     * @notice Locks user input tokens into escrow for a specific intent.
+     * @notice Locks user input tokens into escrow for a specific intent identity.
+     * @dev Pulls exact source amount from depositor via SafeERC20.
      */
     function lockFunds(bytes32 intentHash, address token, uint256 amount, address depositor)
         external

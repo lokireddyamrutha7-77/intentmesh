@@ -20,31 +20,49 @@ contract InvariantsTest is Test {
     SolverBondManager public bondManager;
     CapacityRegistry public capacityRegistry;
     MockERC20 public mockToken;
+    MockERC20 public destToken;
 
     address public user = address(0x1111);
     address public solver = address(0x2222);
-    address public tokenA = address(0x3333);
-    address public tokenB = address(0x4444);
     address public attacker = address(0x9999);
+    bytes32 public policy = keccak256("POLICY");
 
     function setUp() public {
         registry = new IntentRegistry();
-        verifier = new VerificationAdapter(address(registry));
         escrow = new InputEscrow();
+        verifier = new VerificationAdapter(address(registry));
         settlementManager = new SettlementManager(address(verifier), address(escrow));
         bondManager = new SolverBondManager();
         capacityRegistry = new CapacityRegistry(address(bondManager));
-        mockToken = new MockERC20("Mock", "MCK");
 
+        registry.setInputEscrow(address(escrow));
+        escrow.setIntentRegistry(address(registry));
         bondManager.setLocker(address(capacityRegistry), true);
         escrow.setSettlementManager(address(settlementManager));
+
+        mockToken = new MockERC20("Mock", "MCK");
+        destToken = new MockERC20("Dest", "DST");
+
+        mockToken.mint(user, 1_000_000);
+        vm.prank(user);
+        mockToken.approve(address(escrow), type(uint256).max);
     }
 
     /// @notice INVARIANT-001: Intent nonce cannot be consumed twice
     function test_INVARIANT_001_NonceUniqueness() public {
         vm.startPrank(user);
         uint256 nonceBefore = registry.getUserNonce(user);
-        registry.registerIntent(tokenA, 1000, 10, tokenB, user, 900, uint64(block.timestamp + 3600));
+        registry.createAndFundIntent(
+            uint64(block.chainid),
+            address(mockToken),
+            1000,
+            10,
+            address(destToken),
+            user,
+            900,
+            uint64(block.timestamp + 3600),
+            policy
+        );
         uint256 nonceAfter = registry.getUserNonce(user);
 
         assertEq(nonceAfter, nonceBefore + 1);
@@ -54,10 +72,6 @@ contract InvariantsTest is Test {
     /// @notice INVARIANT-003: User escrow cannot be withdrawn by arbitrary callers
     function test_INVARIANT_003_EscrowAccessControl() public {
         bytes32 intentHash = keccak256("intent1");
-        mockToken.mint(user, 1000);
-
-        vm.prank(user);
-        mockToken.approve(address(escrow), 1000);
 
         vm.prank(user);
         escrow.lockFunds(intentHash, address(mockToken), 1000, user);
@@ -78,7 +92,7 @@ contract InvariantsTest is Test {
         bondManager.depositBond{value: 2 ether}();
 
         vm.prank(solver);
-        capacityRegistry.declareCapacity(10, tokenB, 10 ether);
+        capacityRegistry.declareCapacity(10, address(destToken), 10 ether);
 
         vm.prank(address(this));
         capacityRegistry.setReservor(address(this), true);
@@ -86,7 +100,7 @@ contract InvariantsTest is Test {
         // Attempting to reserve capacity (3 ether) exceeding available bond collateral (2 ether) reverts with InsufficientBond
         vm.expectRevert(Errors.InsufficientBond.selector);
         capacityRegistry.reserveCapacity(
-            keccak256("intent1"), solver, 10, tokenB, 3 ether, uint64(block.timestamp + 3600)
+            keccak256("intent1"), solver, 10, address(destToken), 3 ether, uint64(block.timestamp + 3600)
         );
     }
 
@@ -106,15 +120,25 @@ contract InvariantsTest is Test {
 
     /// @notice INVARIANT-007: Proof cannot be consumed twice
     function test_INVARIANT_007_ProofUniqueness() public {
-        bytes32 intentHash =
-            registry.registerIntent(tokenA, 1000, 10, tokenB, user, 900, uint64(block.timestamp + 3600));
+        vm.prank(user);
+        bytes32 intentHash = registry.createAndFundIntent(
+            uint64(block.chainid),
+            address(mockToken),
+            1000,
+            10,
+            address(destToken),
+            user,
+            900,
+            uint64(block.timestamp + 3600),
+            policy
+        );
         bytes32 proofHash = keccak256("proof1");
 
         ProtocolTypes.VerificationProof memory proof = ProtocolTypes.VerificationProof({
             proofHash: proofHash,
             intentHash: intentHash,
             destinationChainId: 10,
-            destinationToken: tokenB,
+            destinationToken: address(destToken),
             recipient: user,
             deliveredAmount: 950,
             blockTimestamp: uint64(block.timestamp),
@@ -174,16 +198,16 @@ contract InvariantsTest is Test {
         bondManager.depositBond{value: uint256(declared) * 1000}();
 
         vm.prank(solver);
-        capacityRegistry.declareCapacity(10, tokenB, declared);
+        capacityRegistry.declareCapacity(10, address(destToken), declared);
 
         capacityRegistry.setReservor(address(this), true);
         capacityRegistry.reserveCapacity(
-            keccak256("intentFuzz"), solver, 10, tokenB, reserved, uint64(block.timestamp + 3600)
+            keccak256("intentFuzz"), solver, 10, address(destToken), reserved, uint64(block.timestamp + 3600)
         );
 
-        uint256 decl = capacityRegistry.getDeclaredCapacity(solver, 10, tokenB);
-        uint256 res = capacityRegistry.getReservedCapacity(solver, 10, tokenB);
-        uint256 avail = capacityRegistry.getAvailableCapacity(solver, 10, tokenB);
+        uint256 decl = capacityRegistry.getDeclaredCapacity(solver, 10, address(destToken));
+        uint256 res = capacityRegistry.getReservedCapacity(solver, 10, address(destToken));
+        uint256 avail = capacityRegistry.getAvailableCapacity(solver, 10, address(destToken));
 
         assertEq(decl, uint256(declared));
         assertEq(res, uint256(reserved));

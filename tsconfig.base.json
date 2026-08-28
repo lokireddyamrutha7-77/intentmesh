@@ -5,6 +5,12 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
+    "baseUrl": ".",
+    "paths": {
+      "@intentmesh/protocol-types": ["packages/protocol-types/src/index.ts"],
+      "@intentmesh/intent-schema": ["packages/intent-schema/src/index.ts"],
+      "@intentmesh/solver-sdk": ["packages/solver-sdk/src/index.ts"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
