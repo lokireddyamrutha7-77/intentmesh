@@ -352,9 +352,9 @@ The repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`
 
 ## Team Details
 
-- **Team Name**: [INSERT TEAM NAME]
-- **Team Members**: [INSERT TEAM MEMBER NAMES]
-- **Institution / Organization**: [INSERT INSTITUTION]
+- **Team Name**: [finova]
+- **Team Members**: [lokireddy amrutha reddy,mutyala saathvi reddy,chinnam pavan sai]
+- **Institution / Organization**: [chennai institute of technology]
 - **Hackathon**: CSI ORIGIN HACKATHON 2026
 - **Problem Statement**: Problem Statement #10 — Cross-Chain Intent Execution Protocol
 
