@@ -114,3 +114,12 @@ export interface VerificationProof {
   blockTimestamp: bigint;
   status: VerificationStatus;
 }
+
+export interface Bid {
+  solver: string;
+  expectedOutputAmount: bigint;
+  estimatedExecutionTime: number;
+  capacityRequired: bigint;
+  salt: string;
+  valid?: boolean;
+}

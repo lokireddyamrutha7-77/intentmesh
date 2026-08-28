@@ -11,3 +11,12 @@ export function validateIntentSchema(intent: Partial<Intent>): boolean {
   if (!intent.destinationChainId || intent.destinationChainId <= 0n) return false;
   return true;
 }
+
+export function computeCanonicalIntentHash(intent: Partial<Intent>): string {
+  const payload = `${intent.user}:${intent.sourceChainId}:${intent.sourceToken}:${intent.sourceAmount}:${intent.destinationChainId}:${intent.destinationToken}:${intent.recipient}:${intent.minOutputAmount}:${intent.deadline}:${intent.nonce}:${intent.verificationPolicy}`;
+  let hash = 0n;
+  for (let i = 0; i < payload.length; i++) {
+    hash = (hash * 31n + BigInt(payload.charCodeAt(i))) % 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
+  }
+  return "0x" + hash.toString(16).padStart(64, "0");
+}

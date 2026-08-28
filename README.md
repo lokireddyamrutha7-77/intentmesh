@@ -274,9 +274,49 @@ pnpm demo
 | :--- | :--- | :--- | :--- | :--- |
 | **Smart Contract Unit & Security** | Foundry (`forge`) | 61 | 61 | **PASS (100%)** |
 | **Fuzz & Invariant Testing** | Foundry (`forge`) | 4 suites (256 runs/ea) | 4 | **PASS (100%)** |
+| **Phase 7 Local EVM Smoke Test** | Foundry (`forge`) | 3 tests | 3 | **PASS (100%)** |
 | **TypeScript Workspace Compilation** | `tsc --build` | 11 packages/services | 11 | **PASS (100%)** |
-| **SDK & Solver Agent Unit Tests** | Node.js Test Runner | 6 scenarios | 6 | **PASS (100%)** |
 | **Master E2E MVP Acceptance Suite** | Custom E2E Runner | 3 master scenarios | 3 | **PASS (100%)** |
+| **Phase 8 Backend API Acceptance Suite** | Custom API Test Suite | 10 API test cases | 10 | **PASS (100%)** |
+| **Phase 9 Indexer & Frontend Test Suite** | Custom Test Runner | 6 test scenarios | 6 | **PASS (100%)** |
+| **Phase 10 Master Integration Suite** | Custom Integration Test | 8 test scenarios | 8 | **PASS (100%)** |
+
+---
+
+## Local Anvil Deployment
+
+IntentMesh includes a fully reproducible local EVM deployment pipeline supporting multi-chain development on Anvil.
+
+> [!WARNING]
+> Anvil deployments use deterministic local development accounts (`0xac09...`) and test tokens (`MockUSDC`). Never deploy production funds or real private keys using local dev configurations.
+
+### 1. Required Tools
+- **Foundry / Anvil**: `forge --version` and `anvil --version`
+- **Node.js**: v20+
+- **pnpm**: v9+
+
+### 2. Launch Local Anvil Chains
+Start the local EVM nodes representing Source (31337) and Destination (31338):
+```bash
+# PowerShell (Windows)
+powershell -ExecutionPolicy Bypass -File scripts/start-local-chains.ps1
+
+# POSIX Shell (Linux/macOS)
+./scripts/start-local-chains.sh
+```
+
+### 3. Deploy Smart Contracts
+Deploy all 10 protocol contracts + `MockUSDC` and wire inter-contract dependencies:
+```bash
+pnpm deploy:local
+```
+
+### 4. Verify Local Deployment & Run Phase 7 Smoke Test
+```bash
+pnpm test:phase7
+```
+Deployment addresses are exported to machine-readable JSON artifacts at:
+`contracts/deployments/deployments-31337.json` and `contracts/deployments/deployments-31338.json`.
 
 ---
 

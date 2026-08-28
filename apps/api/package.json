@@ -12,8 +12,10 @@
     "@intentmesh/execution-monitor": "workspace:*",
     "@intentmesh/failure-manager": "workspace:*",
     "@intentmesh/indexer": "workspace:*",
+    "@intentmesh/intent-schema": "workspace:*",
     "@intentmesh/protocol-types": "workspace:*",
     "@intentmesh/risk-engine": "workspace:*",
+    "@intentmesh/solver-sdk": "workspace:*",
     "@intentmesh/verification-sdk": "workspace:*"
   },
   "devDependencies": {
